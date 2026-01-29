@@ -29,19 +29,17 @@ function setupCVDownloadButtons() {
 // Fetch portfolio data from API
 async function loadPortfolioData() {
     try {
-        console.log('Loading portfolio data from:', `${API_BASE_URL}/api/profile`);
         const response = await fetch(`${API_BASE_URL}/api/profile`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log('Portfolio data loaded successfully:', data);
         populatePage(data);
         // Setup CV download buttons after page is populated
         setTimeout(() => setupCVDownloadButtons(), 100);
     } catch (error) {
         console.error('Error loading portfolio data:', error);
-        console.error('Make sure the Flask backend is running on http://127.0.0.1:800');
+        console.error('Make sure the Flask backend is running on ${API_BASE_URL}');
         // Show error message to user
         showErrorMessage('Unable to load data. Please ensure the backend server is running on port 800.');
     }
@@ -67,9 +65,7 @@ function populatePage(data) {
         console.error('No data provided to populatePage');
         return;
     }
-    
-    console.log('Populating page with data:', data);
-    
+        
     if (data.header && data.social_links) {
         populateHeader(data.header, data.social_links);
     }
@@ -175,7 +171,6 @@ function populateAbout(about) {
         return;
     }
     
-    console.log('Populating about section with data:', about);
     
     // About content (title and description)
     const aboutContent = document.querySelector('#about-content');
@@ -317,8 +312,6 @@ function populateResume(resume) {
         console.error('Resume data is missing');
         return;
     }
-    
-    console.log('Populating resume with data:', resume);
     
     // Education
     const educationContainer = document.querySelector('#education-container');
@@ -477,8 +470,6 @@ function populateTestimonials(testimonials) {
         console.error('Testimonials container not found');
         return;
     }
-    
-    console.log('Populating testimonials with', testimonials.length, 'items');
     
     // Wait for jQuery and Owl Carousel to be available
     if (typeof jQuery === 'undefined' || typeof jQuery.fn.owlCarousel === 'undefined') {
@@ -646,17 +637,16 @@ function populateFooter(footer) {
 // Portfolio Projects Section
 async function loadPortfolioProjects() {
     try {
-        console.log('Loading portfolio projects from:', `${API_BASE_URL}/api/portfolios`);
         const response = await fetch(`${API_BASE_URL}/api/portfolios`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const portfolios = await response.json();
-        console.log('Portfolio projects loaded successfully:', portfolios);
+
         populatePortfolioProjects(portfolios);
     } catch (error) {
         console.error('Error loading portfolio projects:', error);
-        console.error('Make sure the Flask backend is running on http://127.0.0.1:800');
+        console.error('Make sure the Flask backend is running on {http://127.0.0.1:800}');
         // Show error in portfolio container
         const portfolioContainer = document.querySelector('#portfolio-container');
         if (portfolioContainer && portfolioContainer.innerHTML.trim() === '') {
@@ -683,9 +673,7 @@ function populatePortfolioProjects(portfolios) {
         console.warn('No portfolio projects found');
         return;
     }
-    
-    console.log('Populating portfolio with', portfolios.length, 'projects');
-    
+        
     // Category mapping: ai = Artificial Intelligence, ml = Machine Learning, sd = Software Development
     const categoryMap = {
         'ai': 'Artificial Intelligence',
@@ -734,12 +722,37 @@ function populatePortfolioProjects(portfolios) {
         portfolioContainer.appendChild(portfolioItem);
     });
     
-    // Reinitialize isotope filter if it exists
+    // Initialize Isotope after portfolio is populated (theme.js skips when container is empty)
     if (typeof jQuery !== 'undefined' && jQuery.fn.isotope) {
-        setTimeout(() => {
-            jQuery('.portfolio-filter').isotope('reloadItems');
-            jQuery('.portfolio-filter').isotope('layout');
-        }, 100);
+        const $container = jQuery('#portfolio-container');
+        if ($container.length && typeof $container.imagesLoaded === 'function') {
+            $container.imagesLoaded(function () {
+                const rtlVal = jQuery('html').attr('dir') === 'rtl' ? false : true;
+                const $grid = $container.isotope({
+                    layoutMode: 'masonry',
+                    originLeft: rtlVal
+                });
+                jQuery('.portfolio-menu').find('a').off('click.isotope-filter').on('click.isotope-filter', function (e) {
+                    e.preventDefault();
+                    const filterValue = jQuery(this).attr('data-filter');
+                    jQuery('.portfolio-menu').find('a').removeClass('active');
+                    jQuery(this).addClass('active');
+                    $grid.isotope({ filter: filterValue });
+                    return false;
+                });
+            });
+        } else {
+            const rtlVal = jQuery('html').attr('dir') === 'rtl' ? false : true;
+            const $grid = $container.isotope({ layoutMode: 'masonry', originLeft: rtlVal });
+            jQuery('.portfolio-menu').find('a').off('click.isotope-filter').on('click.isotope-filter', function (e) {
+                e.preventDefault();
+                const filterValue = jQuery(this).attr('data-filter');
+                jQuery('.portfolio-menu').find('a').removeClass('active');
+                jQuery(this).addClass('active');
+                $grid.isotope({ filter: filterValue });
+                return false;
+            });
+        }
     }
 }
 

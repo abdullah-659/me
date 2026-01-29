@@ -201,6 +201,8 @@ $(this).magnificPopup({
 $(window).on('load', function () {
 $(".portfolio-filter").each(function() {
     var e = $(this);
+	// Skip init when container is empty (portfolio loaded dynamically by data-loader.js)
+	if (e.children().length === 0) return;
 	e.imagesLoaded(function () {
 	if ($("html").attr("dir") == 'rtl') {
 		var rtlVal = false
